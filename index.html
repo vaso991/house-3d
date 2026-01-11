@@ -179,6 +179,7 @@
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.localClippingEnabled = true;
   document.body.appendChild(renderer.domElement);
 
   // Lights
@@ -192,6 +193,13 @@
   // Controls
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+
+  // Clip anything too close to camera
+  const clipDistance = 0.4;
+  const clipPlane = new THREE.Plane();
+  const clipDirection = new THREE.Vector3();
+  const clipPoint = new THREE.Vector3();
+  renderer.clippingPlanes = [clipPlane];
 
   // Camera views
   const defaultPos = { x: 0, y: 1, z: 3 };
@@ -297,6 +305,11 @@
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
+
+    camera.getWorldDirection(clipDirection);
+    clipPoint.copy(camera.position).addScaledVector(clipDirection, clipDistance);
+    clipPlane.setFromNormalAndCoplanarPoint(clipDirection, clipPoint);
+
     renderer.render(scene, camera);
   }
   animate();
