@@ -144,7 +144,11 @@
 <div id="help">
   <kbd>Drag</kbd> Rotate<br>
   <kbd>Scroll</kbd> Zoom<br>
-  <kbd>Right-drag</kbd> Pan
+  <kbd>Right-drag</kbd> Pan<br>
+  <kbd>WASD</kbd>/<kbd>Arrows</kbd> Move<br>
+  <kbd>Space</kbd> Up<br>
+  <kbd>Shift</kbd> Down<br>
+  <kbd>Q</kbd>/<kbd>E</kbd> Rotate
 </div>
 
 <script type="importmap">
@@ -193,6 +197,24 @@
   // Controls
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+
+  // Keyboard movement
+  const keyState = {};
+  const moveSpeed = 0.06;
+  const rotateSpeed = 0.03;
+  const moveDirection = new THREE.Vector3();
+  const moveRight = new THREE.Vector3();
+  const moveUp = new THREE.Vector3(0, 1, 0);
+  const moveDelta = new THREE.Vector3();
+  const rotateOffset = new THREE.Vector3();
+
+  window.addEventListener('keydown', (event) => {
+    keyState[event.code] = true;
+  });
+
+  window.addEventListener('keyup', (event) => {
+    keyState[event.code] = false;
+  });
 
   // Clip anything too close to camera
   const clipDistance = 0.4;
@@ -305,6 +327,39 @@
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
+
+    moveDirection.set(0, 0, 0);
+    if (keyState.KeyW || keyState.ArrowUp) moveDirection.z -= 1;
+    if (keyState.KeyS || keyState.ArrowDown) moveDirection.z += 1;
+    if (keyState.KeyA || keyState.ArrowLeft) moveDirection.x -= 1;
+    if (keyState.KeyD || keyState.ArrowRight) moveDirection.x += 1;
+    if (keyState.Space) moveDirection.y += 1;
+    if (keyState.ShiftLeft || keyState.ShiftRight) moveDirection.y -= 1;
+
+    if (moveDirection.lengthSq() > 0) {
+      moveDirection.normalize();
+      camera.getWorldDirection(clipDirection);
+      moveRight.crossVectors(clipDirection, moveUp).normalize();
+
+      moveDelta.set(0, 0, 0);
+      moveDelta
+        .addScaledVector(clipDirection, moveDirection.z * moveSpeed)
+        .addScaledVector(moveRight, moveDirection.x * moveSpeed)
+        .addScaledVector(moveUp, moveDirection.y * moveSpeed);
+
+      camera.position.add(moveDelta);
+      controls.target.add(moveDelta);
+    }
+
+    let rotateAmount = 0;
+    if (keyState.KeyQ) rotateAmount += rotateSpeed;
+    if (keyState.KeyE) rotateAmount -= rotateSpeed;
+
+    if (rotateAmount !== 0) {
+      rotateOffset.copy(camera.position).sub(controls.target);
+      rotateOffset.applyAxisAngle(moveUp, rotateAmount);
+      camera.position.copy(controls.target).add(rotateOffset);
+    }
 
     camera.getWorldDirection(clipDirection);
     clipPoint.copy(camera.position).addScaledVector(clipDirection, clipDistance);
