@@ -48,6 +48,12 @@
     font-weight: 600;
     letter-spacing: -0.5px;
   }
+  #loader-speed {
+    margin-top: 6px;
+    color: #666;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+  }
 
   /* Navigation */
   #nav {
@@ -122,6 +128,7 @@
   <div class="spinner"></div>
   <p id="loader-text">Loading model...</p>
   <span id="loader-percent">0%</span>
+  <span id="loader-speed"></span>
 </div>
 
 <nav id="nav">
@@ -234,6 +241,11 @@
   loader.setDRACOLoader(dracoLoader);
   const loaderEl = document.getElementById('loader');
   const loaderPercent = document.getElementById('loader-percent');
+  const loaderSpeed = document.getElementById('loader-speed');
+  
+  // Track download speed
+  let lastLoaded = 0;
+  let lastTime = performance.now();
   
   loader.load(
     'model.glb',
@@ -242,10 +254,30 @@
       loaderEl.classList.add('hidden');
     },
     function (progress) {
-      console.log(progress);
       if (progress.lengthComputable) {
-        const percent = Math.round((progress.loaded / progress.total) * 100);
+        const percent = Math.min(100, Math.round((progress.loaded / progress.total) * 100));
         loaderPercent.textContent = percent + '%';
+        
+        // Calculate download speed
+        const now = performance.now();
+        const timeDiff = (now - lastTime) / 1000; // seconds
+        if (timeDiff > 0.1) { // Update every 100ms
+          const bytesDiff = progress.loaded - lastLoaded;
+          const speed = bytesDiff / timeDiff; // bytes per second
+          
+          let speedText;
+          if (speed >= 1024 * 1024) {
+            speedText = (speed / (1024 * 1024)).toFixed(1) + ' MB/s';
+          } else if (speed >= 1024) {
+            speedText = (speed / 1024).toFixed(0) + ' KB/s';
+          } else {
+            speedText = speed.toFixed(0) + ' B/s';
+          }
+          loaderSpeed.textContent = speedText;
+          
+          lastLoaded = progress.loaded;
+          lastTime = now;
+        }
       }
     },
     function (error) {
