@@ -40,6 +40,14 @@
     font-size: 14px;
     letter-spacing: 0.5px;
   }
+  #loader-percent {
+    margin-top: 8px;
+    color: #fff;
+    font-family: system-ui, sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
 
   /* Navigation */
   #nav {
@@ -112,7 +120,8 @@
 
 <div id="loader">
   <div class="spinner"></div>
-  <p>Loading model...</p>
+  <p id="loader-text">Loading model...</p>
+  <span id="loader-percent">0%</span>
 </div>
 
 <nav id="nav">
@@ -224,6 +233,7 @@
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
   const loaderEl = document.getElementById('loader');
+  const loaderPercent = document.getElementById('loader-percent');
   
   loader.load(
     'model.glb',
@@ -231,7 +241,13 @@
       scene.add(gltf.scene);
       loaderEl.classList.add('hidden');
     },
-    undefined,
+    function (progress) {
+      console.log(progress);
+      if (progress.lengthComputable) {
+        const percent = Math.round((progress.loaded / progress.total) * 100);
+        loaderPercent.textContent = percent + '%';
+      }
+    },
     function (error) {
       console.error(error);
       loaderEl.innerHTML = '<p style="color:#ff6b6b">Failed to load model</p>';
