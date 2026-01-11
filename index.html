@@ -6,9 +6,130 @@
 <style>
   body { margin: 0; overflow: hidden; }
   canvas { display: block; }
+  
+  #loader {
+    position: fixed;
+    inset: 0;
+    background: #222222;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.4s ease;
+  }
+  #loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  #loader p {
+    margin-top: 16px;
+    color: #888;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Navigation */
+  #nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    z-index: 10;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #nav button {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #nav button:hover {
+    background: rgba(255,255,255,0.2);
+  }
+  #nav button:active {
+    transform: scale(0.96);
+  }
+  #nav .divider {
+    width: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: 0 4px;
+  }
+
+  /* Help tooltip */
+  #help {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 14px 18px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.8;
+    z-index: 10;
+  }
+  #help kbd {
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+    color: #ccc;
+  }
 </style>
 </head>
 <body>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <p>Loading model...</p>
+</div>
+
+<nav id="nav">
+  <button data-view="front">Front</button>
+  <button data-view="back">Back</button>
+  <button data-view="left">Left</button>
+  <button data-view="right">Right</button>
+  <button data-view="top">Top</button>
+  <div class="divider"></div>
+  <button data-view="reset">Reset</button>
+</nav>
+
+<div id="help">
+  <kbd>Drag</kbd> Rotate<br>
+  <kbd>Scroll</kbd> Zoom<br>
+  <kbd>Right-drag</kbd> Pan
+</div>
 
 <script type="importmap">
 {
@@ -56,20 +177,64 @@
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
+  // Camera views
+  const defaultPos = { x: 0, y: 1, z: 3 };
+  const views = {
+    front:  { x: 0, y: 1, z: 5 },
+    back:   { x: 0, y: 1, z: -5 },
+    left:   { x: -5, y: 1, z: 0 },
+    right:  { x: 5, y: 1, z: 0 },
+    top:    { x: 0, y: 6, z: 0.01 },
+    reset:  defaultPos
+  };
+
+  function animateCamera(targetPos) {
+    const start = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    const duration = 600;
+    const startTime = performance.now();
+
+    function update() {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+
+      camera.position.x = start.x + (targetPos.x - start.x) * ease;
+      camera.position.y = start.y + (targetPos.y - start.y) * ease;
+      camera.position.z = start.z + (targetPos.z - start.z) * ease;
+      camera.lookAt(0, 0, 0);
+      controls.target.set(0, 0, 0);
+
+      if (t < 1) requestAnimationFrame(update);
+    }
+    update();
+  }
+
+  // Navigation buttons
+  document.querySelectorAll('#nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      if (views[view]) animateCamera(views[view]);
+    });
+  });
+
   // Load model
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
 
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
+  const loaderEl = document.getElementById('loader');
+  
   loader.load(
     'model.glb',
     function (gltf) {
       scene.add(gltf.scene);
+      loaderEl.classList.add('hidden');
     },
     undefined,
     function (error) {
       console.error(error);
+      loaderEl.innerHTML = '<p style="color:#ff6b6b">Failed to load model</p>';
     }
   );
 
