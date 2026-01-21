@@ -24,7 +24,7 @@ class App {
 		const hash = location.hash ? queryString.parse(location.hash) : {};
 		this.options = {
 			kiosk: Boolean(hash.kiosk),
-			model: hash.model || '/model.glb',
+			model: hash.model || 'model.glb',
 			preset: hash.preset || '',
 			cameraPosition: hash.cameraPosition ? hash.cameraPosition.split(',').map(Number) : null,
 		};
