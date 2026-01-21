@@ -3,7 +3,6 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { Viewer } from './viewer.js';
 import { SimpleDropzone } from 'simple-dropzone';
 import { Validator } from './validator.js';
-import { Footer } from './components/footer';
 import queryString from 'query-string';
 
 window.THREE = THREE;
@@ -151,8 +150,6 @@ class App {
 		this.spinnerEl.style.display = 'none';
 	}
 }
-
-document.body.innerHTML += Footer();
 
 document.addEventListener('DOMContentLoaded', () => {
 	const app = new App(document.body, location);
