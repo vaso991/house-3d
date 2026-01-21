@@ -77,8 +77,8 @@ export class Viewer {
 			autoRotate: false,
 
 			// Lights
-			punctualLights: true,
-			exposure: -6.0,
+			punctualLights: false,
+			exposure: 0.0,
 			toneMapping: LinearToneMapping,
 			ambientIntensity: 0.3,
 			ambientColor: '#FFFFFF',
